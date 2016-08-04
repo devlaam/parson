@@ -38,7 +38,6 @@
 #define ARRAY_MAX_CAPACITY    122880 /* 15*(2^13) */
 #define OBJECT_MAX_CAPACITY      960 /* 15*(2^6)  */
 #define MAX_NESTING               19
-#define DOUBLE_SERIALIZATION_FORMAT "%f"
 
 #define SIZEOF_TOKEN(a)       (sizeof(a) - 1)
 #define SKIP_CHAR(str)        ((*str)++)
@@ -887,6 +886,49 @@ static int append_string(char *buf, const char *string) {
     return sprintf(buf, "%s", string);
 }
 
+
+/* Array appender helper methods */
+typedef JSON_Status (*json_array_append_generic)(JSON_Array * array, void * box, int i);
+typedef JSON_Status (*json_object_generic_set_value)(JSON_Object *object, const char *name, JSON_Value *value);
+
+static JSON_Status json_object_set_number_generic(JSON_Object *object, const char *name, void * box, int size, json_array_append_generic jaag, json_object_generic_set_value jogsv) {
+	int i;
+	JSON_Value * value;
+	JSON_Array * array;
+	JSON_Status result;
+	value = json_value_init_array();
+	if (value == NULL)
+		return JSONFailure;
+	array = json_value_get_array(value);
+	for (i = 0; i < size; i++) {
+		if (jaag(array, box, i) == JSONFailure) {
+			json_value_free(value);
+			return JSONFailure;
+		}
+	}
+	result = jogsv(object, name, value);
+	if (result == JSONFailure)
+		json_value_free(value);
+	return result;
+}
+
+static JSON_Status json_array_append_generic_boolean(JSON_Array * array, void * box, int i) {
+	return json_array_append_boolean(array, ((int*) box)[i]);
+}
+
+static JSON_Status json_array_append_generic_int(JSON_Array * array, void * box, int i) {
+	return json_array_append_number(array, ((int*) box)[i]);
+}
+
+static JSON_Status json_array_append_generic_double(JSON_Array * array, void * box, int i) {
+	return json_array_append_number(array, ((double*) box)[i]);
+}
+
+static JSON_Status json_array_append_generic_string(JSON_Array * array, void * box, int i) {
+	return json_array_append_string(array, ((char **) box)[i]);
+}
+
+
 #undef APPEND_STRING
 #undef APPEND_INDENT
 
@@ -1524,6 +1566,22 @@ JSON_Status json_object_set_null(JSON_Object *object, const char *name) {
     return json_object_set_value(object, name, json_value_init_null());
 }
 
+JSON_Status json_object_set_boolean_array(JSON_Object *object, const char *name, int boolean[], int size) {
+	return json_object_set_number_generic(object, name, (void *) boolean, size, json_array_append_generic_boolean, json_object_set_value);
+}
+
+JSON_Status json_object_set_int_array(JSON_Object *object, const char *name, int number[], int size) {
+	return json_object_set_number_generic(object, name, (void *) number, size, json_array_append_generic_int, json_object_set_value);
+}
+
+JSON_Status json_object_set_double_array(JSON_Object *object, const char *name, double number[], int size) {
+	return json_object_set_number_generic(object, name, (void *) number, size, json_array_append_generic_double, json_object_set_value);
+}
+
+JSON_Status json_object_set_string_array(JSON_Object *object, const char *name, char *strs[], int size) {
+	return json_object_set_number_generic(object, name, (void *) strs, size, json_array_append_generic_string, json_object_set_value);
+}
+
 JSON_Status json_object_dotset_value(JSON_Object *object, const char *name, JSON_Value *value) {
     const char *dot_pos = NULL;
     char *current_name = NULL;
@@ -1597,6 +1655,22 @@ JSON_Status json_object_dotset_null(JSON_Object *object, const char *name) {
         return JSONFailure;
     }
     return JSONSuccess;
+}
+
+JSON_Status json_object_dotset_boolean_array(JSON_Object *object, const char *name, int boolean[], int size) {
+	return json_object_set_number_generic(object, name, (void *) boolean, size, json_array_append_generic_boolean, json_object_dotset_value);
+}
+
+JSON_Status json_object_dotset_int_array(JSON_Object *object, const char *name, int number[], int size) {
+	return json_object_set_number_generic(object, name, (void *) number, size, json_array_append_generic_int, json_object_dotset_value);
+}
+
+JSON_Status json_object_dotset_double_array(JSON_Object *object, const char *name, double number[], int size) {
+	return json_object_set_number_generic(object, name, (void *) number, size, json_array_append_generic_double, json_object_dotset_value);
+}
+
+JSON_Status json_object_dotset_string_array(JSON_Object *object, const char *name, char *strs[], int size) {
+	return json_object_set_number_generic(object, name, (void *) strs, size, json_array_append_generic_string, json_object_dotset_value);
 }
 
 JSON_Status json_object_remove(JSON_Object *object, const char *name) {

@@ -31,6 +31,9 @@ extern "C"
 
 #include <stddef.h>   /* size_t */
 
+/* Define the formating of doubles for your project. */
+#define DOUBLE_SERIALIZATION_FORMAT "%.10g"
+
 /* Types and enums */
 typedef struct json_object_t JSON_Object;
 typedef struct json_array_t  JSON_Array;
@@ -144,6 +147,10 @@ JSON_Status json_object_set_string(JSON_Object *object, const char *name, const 
 JSON_Status json_object_set_number(JSON_Object *object, const char *name, double number);
 JSON_Status json_object_set_boolean(JSON_Object *object, const char *name, int boolean);
 JSON_Status json_object_set_null(JSON_Object *object, const char *name);
+JSON_Status json_object_set_boolean_array(JSON_Object *object, const char *name, int boolean[], int size);
+JSON_Status json_object_set_int_array(JSON_Object *object, const char *name, int number[], int size);
+JSON_Status json_object_set_double_array(JSON_Object *object, const char *name, double number[], int size);
+JSON_Status json_object_set_string_array(JSON_Object *object, const char *name, char *strs[], int size);
 
 /* Works like dotget functions, but creates whole hierarchy if necessary.
  * json_object_dotset_value does not copy passed value so it shouldn't be freed afterwards. */
@@ -152,6 +159,10 @@ JSON_Status json_object_dotset_string(JSON_Object *object, const char *name, con
 JSON_Status json_object_dotset_number(JSON_Object *object, const char *name, double number);
 JSON_Status json_object_dotset_boolean(JSON_Object *object, const char *name, int boolean);
 JSON_Status json_object_dotset_null(JSON_Object *object, const char *name);
+JSON_Status json_object_dotset_boolean_array(JSON_Object *object, const char *name, int boolean[], int size);
+JSON_Status json_object_dotset_int_array(JSON_Object *object, const char *name, int number[], int size);
+JSON_Status json_object_dotset_double_array(JSON_Object *object, const char *name, double number[], int size);
+JSON_Status json_object_dotset_string_array(JSON_Object *object, const char *name, char *strs[], int size);
 
 /* Frees and removes name-value pair */
 JSON_Status json_object_remove(JSON_Object *object, const char *name);
